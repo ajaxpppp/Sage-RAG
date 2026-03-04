@@ -15,40 +15,41 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.mcp;
+package com.nageoffer.ai.ragent.mcp.protocol;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.Map;
 
 /**
- * MCP 工具执行器接口
+ * JSON-RPC 2.0 请求
+ * <p>
+ * 对应 HTTP POST /mcp 的请求体
  */
-public interface MCPToolExecutor {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class JsonRpcRequest {
 
     /**
-     * 获取工具定义
-     *
-     * @return 工具元信息
+     * 协议版本，固定为 2.0
      */
-    MCPTool getToolDefinition();
+    private String jsonrpc = "2.0";
 
     /**
-     * 执行工具调用
-     *
-     * @param request MCP 请求
-     * @return MCP 响应
+     * 请求 ID，通知请求可为空
      */
-    MCPResponse execute(MCPRequest request);
+    private Object id;
 
     /**
-     * 工具 ID（快捷方法）
+     * 调用方法名，例如 initialize、tools/list、tools/call
      */
-    default String getToolId() {
-        return getToolDefinition().getToolId();
-    }
+    private String method;
 
     /**
-     * 是否支持该请求
-     * 默认只检查 toolId 是否匹配
+     * 方法参数，key 为参数名，value 为参数值
      */
-    default boolean supports(MCPRequest request) {
-        return getToolId().equals(request.getToolId());
-    }
+    private Map<String, Object> params;
 }

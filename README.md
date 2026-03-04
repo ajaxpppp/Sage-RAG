@@ -6,9 +6,9 @@
 ![React](https://img.shields.io/badge/React-18-61dafb.svg)
 ![Milvus](https://img.shields.io/badge/Milvus-2.6.x-00b3ff.svg)
 
-> 企业级 RAG 智能体平台（Ragent）
+> 企业级 RAG 智能体平台
 >
-> 把知识库检索、多通道召回、MCP 工具调用、会话记忆、流式输出、链路追踪、数据入库流水线放在同一套工程里。
+> 纯手搓，一套真正能落地、经得起生产检验的 Agentic RAG 系统。深入底层设计，覆盖全链路核心能力，拒绝 Demo 玩具。校招社招通用，直接写进简历！
 
 ## 目录
 
@@ -292,8 +292,6 @@ Ragent 提供功能完善的管理后台，用于系统配置与运行管理。�
 ![](https://oss.open8gu.com/iShot_2026-02-04_22.03.41.png)
 
 ![](https://oss.open8gu.com/iShot_2026-02-04_22.03.58.png)
-
-![](https://oss.open8gu.com/iShot_2026-02-04_22.04.06.png)
 
 ![](https://oss.open8gu.com/iShot_2026-02-04_22.04.06.png)
 

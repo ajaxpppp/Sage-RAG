@@ -15,40 +15,44 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.mcp;
+package com.nageoffer.ai.ragent.mcp.core;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
- * MCP 工具执行器接口
+ * MCP 工具注册表接口
+ * <p>
+ * 管理服务端已注册的工具执行器，并提供按 toolId 查询能力
  */
-public interface MCPToolExecutor {
+public interface MCPToolRegistry {
 
     /**
-     * 获取工具定义
+     * 注册工具执行器
      *
-     * @return 工具元信息
+     * @param executor 工具执行器实例
      */
-    MCPTool getToolDefinition();
+    void register(MCPToolExecutor executor);
 
     /**
-     * 执行工具调用
+     * 按工具 ID 获取执行器
      *
-     * @param request MCP 请求
-     * @return MCP 响应
+     * @param toolId 工具 ID，对应 tools/call 的 name
+     * @return 执行器，不存在时返回空
      */
-    MCPResponse execute(MCPRequest request);
+    Optional<MCPToolExecutor> getExecutor(String toolId);
 
     /**
-     * 工具 ID（快捷方法）
+     * 获取所有已注册工具定义
+     *
+     * @return 工具定义列表
      */
-    default String getToolId() {
-        return getToolDefinition().getToolId();
-    }
+    List<MCPToolDefinition> listAllTools();
 
     /**
-     * 是否支持该请求
-     * 默认只检查 toolId 是否匹配
+     * 获取所有已注册执行器
+     *
+     * @return 执行器列表
      */
-    default boolean supports(MCPRequest request) {
-        return getToolId().equals(request.getToolId());
-    }
+    List<MCPToolExecutor> listAllExecutors();
 }

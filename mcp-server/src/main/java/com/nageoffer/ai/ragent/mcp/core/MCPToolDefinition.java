@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.mcp;
+package com.nageoffer.ai.ragent.mcp.core;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -27,52 +27,37 @@ import java.util.Map;
 
 /**
  * MCP 工具定义
- * <p>
- * 描述一个可被调用的外部工具/API，包含工具元信息和参数定义
- * 类似于 Function Calling 中的 function definition
- * <p>
- * 注意：
- * - name 和 examples 字段已移除，这些信息由意图树表（IntentNodeDO）管理
- * - 意图树负责意图识别阶段的匹配，MCPTool 负责参数提取和执行阶段
- * - 一个 MCPTool 可以对应多个意图节点，实现业务视角和技术视角的分离
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MCPTool {
+public class MCPToolDefinition {
 
     /**
-     * 工具唯一标识（标准 MCP 字段）
-     * 例如：attendance_query、approval_list、leave_balance
+     * 工具的唯一标识符
      */
     private String toolId;
 
     /**
-     * 工具描述（标准 MCP 字段）
+     * 工具的详细描述
      * 用于参数提取阶段，LLM 根据此描述理解工具能力并提取参数
      */
     private String description;
 
     /**
-     * 参数定义（标准 MCP 字段）
-     * key: 参数名, value: 参数描述
+     * 工具参数定义映射，key为参数名，value为参数定义
      */
     private Map<String, ParameterDef> parameters;
 
     /**
-     * 是否需要用户身份（调用时自动注入 userId）
+     * 是否需要用户ID，默认为true
      */
     @Builder.Default
     private boolean requireUserId = true;
 
     /**
-     * MCP Server 地址（可选，用于远程调用）
-     */
-    private String mcpServerUrl;
-
-    /**
-     * 参数定义
+     * 参数定义类
      */
     @Data
     @Builder
@@ -86,24 +71,24 @@ public class MCPTool {
         private String description;
 
         /**
-         * 参数类型：string, number, boolean, array, object
+         * 参数类型，默认为"string"
          */
         @Builder.Default
         private String type = "string";
 
         /**
-         * 是否必填
+         * 是否必填，默认为false
          */
         @Builder.Default
         private boolean required = false;
 
         /**
-         * 默认值
+         * 参数默认值
          */
         private Object defaultValue;
 
         /**
-         * 枚举值（可选）
+         * 枚举值列表
          */
         private List<String> enumValues;
     }

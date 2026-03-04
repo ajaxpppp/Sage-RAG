@@ -15,40 +15,39 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.mcp;
+package com.nageoffer.ai.ragent.rag.core.mcp.client;
+
+import com.nageoffer.ai.ragent.rag.core.mcp.MCPTool;
+
+import java.util.List;
+import java.util.Map;
 
 /**
- * MCP 工具执行器接口
+ * MCP 协议客户端接口
+ * 用于与远程 MCP Server 通信，遵循 MCP 协议标准（JSON-RPC 2.0）
  */
-public interface MCPToolExecutor {
+public interface MCPClient {
 
     /**
-     * 获取工具定义
+     * 初始化连接，获取 server 能力
      *
-     * @return 工具元信息
+     * @return 初始化是否成功
      */
-    MCPTool getToolDefinition();
+    boolean initialize();
 
     /**
-     * 执行工具调用
+     * 获取远程工具列表
      *
-     * @param request MCP 请求
-     * @return MCP 响应
+     * @return 工具定义列表
      */
-    MCPResponse execute(MCPRequest request);
+    List<MCPTool> listTools();
 
     /**
-     * 工具 ID（快捷方法）
+     * 调用远程工具
+     *
+     * @param toolName  工具名称（即 toolId）
+     * @param arguments 调用参数
+     * @return 工具调用结果（文本形式）
      */
-    default String getToolId() {
-        return getToolDefinition().getToolId();
-    }
-
-    /**
-     * 是否支持该请求
-     * 默认只检查 toolId 是否匹配
-     */
-    default boolean supports(MCPRequest request) {
-        return getToolId().equals(request.getToolId());
-    }
+    String callTool(String toolName, Map<String, Object> arguments);
 }

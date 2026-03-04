@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.mcp;
+package com.nageoffer.ai.ragent.mcp.core;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,64 +26,57 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * MCP 调用请求
+ * MCP 工具调用请求
+ * <p>
+ * 由协议层解析 tools/call 参数后构建，并传入具体执行器
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MCPRequest {
+public class MCPToolRequest {
 
     /**
-     * 要调用的工具 ID
+     * 目标工具 ID，通常等于 tools/call 的 name
      */
     private String toolId;
-
     /**
-     * 用户 ID（用于权限校验和个人数据查询）
+     * 调用方用户 ID，可选
      */
     private String userId;
-
     /**
-     * 会话 ID（可选，用于上下文关联）
+     * 会话 ID，可选
      */
     private String conversationId;
-
     /**
-     * 原始用户问题
+     * 原始用户问题，可选
      */
     private String userQuestion;
 
     /**
-     * 调用参数
+     * 工具参数，key 为参数名，value 为参数值
      */
     @Builder.Default
     private Map<String, Object> parameters = new HashMap<>();
 
     /**
-     * 添加参数
-     */
-    public void addParameter(String key, Object value) {
-        if (this.parameters == null) {
-            this.parameters = new HashMap<>();
-        }
-        this.parameters.put(key, value);
-    }
-
-    /**
-     * 获取参数
+     * 按指定类型读取参数
+     *
+     * @param key 参数名
+     * @param <T> 目标类型
+     * @return 参数值，不存在时返回 null
      */
     @SuppressWarnings("unchecked")
     public <T> T getParameter(String key) {
         Object value = parameters.get(key);
-        if (value == null) {
-            return null;
-        }
-        return (T) value;
+        return value != null ? (T) value : null;
     }
 
     /**
-     * 获取字符串参数
+     * 读取字符串参数
+     *
+     * @param key 参数名
+     * @return 参数字符串，不存在时返回 null
      */
     public String getStringParameter(String key) {
         Object value = parameters.get(key);

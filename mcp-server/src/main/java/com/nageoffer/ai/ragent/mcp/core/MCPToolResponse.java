@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.mcp;
+package com.nageoffer.ai.ragent.mcp.core;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -26,16 +26,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * MCP 调用响应
+ * MCP 工具调用响应
+ * <p>
+ * 由执行器返回，随后由协议层转换为 MCP 标准响应结构
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class MCPResponse {
+public class MCPToolResponse {
 
     /**
-     * 是否调用成功
+     * 执行是否成功
      */
     @Builder.Default
     private boolean success = true;
@@ -46,36 +48,37 @@ public class MCPResponse {
     private String toolId;
 
     /**
-     * 结果数据（结构化）
+     * 结构化数据，可选
      */
     @Builder.Default
     private Map<String, Object> data = new HashMap<>();
 
     /**
-     * 文本形式的结果（用于直接拼接到 Prompt）
+     * 文本结果
      */
     private String textResult;
-
     /**
-     * 错误信息（调用失败时）
+     * 错误消息，失败时使用
      */
     private String errorMessage;
-
     /**
-     * 错误码（调用失败时）
+     * 业务错误码，失败时使用
      */
     private String errorCode;
-
     /**
-     * 调用耗时（毫秒）
+     * 执行耗时，单位毫秒
      */
     private long costMs;
 
     /**
-     * 创建成功响应
+     * 构建成功响应，仅包含文本结果
+     *
+     * @param toolId 工具 ID
+     * @param textResult 文本结果
+     * @return 成功响应
      */
-    public static MCPResponse success(String toolId, String textResult) {
-        return MCPResponse.builder()
+    public static MCPToolResponse success(String toolId, String textResult) {
+        return MCPToolResponse.builder()
                 .success(true)
                 .toolId(toolId)
                 .textResult(textResult)
@@ -83,10 +86,15 @@ public class MCPResponse {
     }
 
     /**
-     * 创建成功响应（带结构化数据）
+     * 构建成功响应，包含文本和结构化数据
+     *
+     * @param toolId 工具 ID
+     * @param textResult 文本结果
+     * @param data 结构化数据
+     * @return 成功响应
      */
-    public static MCPResponse success(String toolId, String textResult, Map<String, Object> data) {
-        return MCPResponse.builder()
+    public static MCPToolResponse success(String toolId, String textResult, Map<String, Object> data) {
+        return MCPToolResponse.builder()
                 .success(true)
                 .toolId(toolId)
                 .textResult(textResult)
@@ -95,10 +103,15 @@ public class MCPResponse {
     }
 
     /**
-     * 创建失败响应
+     * 构建失败响应
+     *
+     * @param toolId 工具 ID
+     * @param errorCode 错误码
+     * @param errorMessage 错误消息
+     * @return 失败响应
      */
-    public static MCPResponse error(String toolId, String errorCode, String errorMessage) {
-        return MCPResponse.builder()
+    public static MCPToolResponse error(String toolId, String errorCode, String errorMessage) {
+        return MCPToolResponse.builder()
                 .success(false)
                 .toolId(toolId)
                 .errorCode(errorCode)

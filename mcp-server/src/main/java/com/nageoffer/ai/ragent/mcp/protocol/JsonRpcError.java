@@ -15,40 +15,42 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.mcp;
+package com.nageoffer.ai.ragent.mcp.protocol;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
- * MCP 工具执行器接口
+ * JSON-RPC 2.0 错误对象
  */
-public interface MCPToolExecutor {
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class JsonRpcError {
 
     /**
-     * 获取工具定义
-     *
-     * @return 工具元信息
+     * 方法不存在
      */
-    MCPTool getToolDefinition();
+    public static final int METHOD_NOT_FOUND = -32601;
 
     /**
-     * 执行工具调用
-     *
-     * @param request MCP 请求
-     * @return MCP 响应
+     * 参数非法
      */
-    MCPResponse execute(MCPRequest request);
+    public static final int INVALID_PARAMS = -32602;
 
     /**
-     * 工具 ID（快捷方法）
+     * 服务器内部错误
      */
-    default String getToolId() {
-        return getToolDefinition().getToolId();
-    }
+    public static final int INTERNAL_ERROR = -32603;
 
     /**
-     * 是否支持该请求
-     * 默认只检查 toolId 是否匹配
+     * 错误码
      */
-    default boolean supports(MCPRequest request) {
-        return getToolId().equals(request.getToolId());
-    }
+    private Integer code;
+
+    /**
+     * 错误消息
+     */
+    private String message;
 }

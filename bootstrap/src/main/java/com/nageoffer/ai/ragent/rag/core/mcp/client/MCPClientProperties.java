@@ -15,40 +15,37 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.rag.core.mcp;
+package com.nageoffer.ai.ragent.rag.core.mcp.client;
+
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * MCP 工具执行器接口
+ * MCP 客户端配置属性
  */
-public interface MCPToolExecutor {
+@Data
+@ConfigurationProperties(prefix = "rag.mcp")
+public class MCPClientProperties {
 
     /**
-     * 获取工具定义
-     *
-     * @return 工具元信息
+     * MCP Server 列表
      */
-    MCPTool getToolDefinition();
+    private List<ServerConfig> servers = new ArrayList<>();
 
-    /**
-     * 执行工具调用
-     *
-     * @param request MCP 请求
-     * @return MCP 响应
-     */
-    MCPResponse execute(MCPRequest request);
+    @Data
+    public static class ServerConfig {
 
-    /**
-     * 工具 ID（快捷方法）
-     */
-    default String getToolId() {
-        return getToolDefinition().getToolId();
-    }
+        /**
+         * 服务名称
+         */
+        private String name;
 
-    /**
-     * 是否支持该请求
-     * 默认只检查 toolId 是否匹配
-     */
-    default boolean supports(MCPRequest request) {
-        return getToolId().equals(request.getToolId());
+        /**
+         * 服务地址
+         */
+        private String url;
     }
 }
