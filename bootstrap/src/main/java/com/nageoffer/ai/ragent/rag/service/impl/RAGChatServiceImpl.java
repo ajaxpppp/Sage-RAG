@@ -110,9 +110,8 @@ public class RAGChatServiceImpl implements RAGChatService {
 
         RetrievalContext ctx = retrievalEngine.retrieve(subIntents, DEFAULT_TOP_K);
         if (ctx.isEmpty()) {
-            String emptyReply = "未检索到与问题相关的文档内容。";
-            callback.onContent(emptyReply);
-            callback.onComplete();
+            StreamCancellationHandle handle = streamSystemResponse(rewriteResult.rewrittenQuestion(), callback);
+            taskManager.bindHandle(taskId, handle);
             return;
         }
 

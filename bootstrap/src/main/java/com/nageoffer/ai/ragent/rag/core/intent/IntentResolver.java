@@ -77,6 +77,9 @@ public class IntentResolver {
     }
 
     public boolean isSystemOnly(List<NodeScore> nodeScores) {
+        if (CollUtil.isEmpty(nodeScores)) {
+            return true;
+        }
         return nodeScores.size() == 1
                 && nodeScores.get(0).getNode() != null
                 && nodeScores.get(0).getNode().getKind() == SYSTEM;
