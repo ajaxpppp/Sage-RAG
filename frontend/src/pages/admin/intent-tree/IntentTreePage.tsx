@@ -529,7 +529,7 @@ function IntentNodeDialog({
       level: nextLevel,
       kind: parentKind,
       parentCode: parentNode?.intentCode || ROOT_PARENT,
-      kbId: kbMatch?.id || knowledgeBases[0]?.id || "",
+      kbId: "",
       mcpToolId: "",
       collectionName: "",
       description: "",
@@ -571,8 +571,8 @@ function IntentNodeDialog({
         : [];
 
     if (mode === "create") {
-      if (values.kind === 0 && !values.kbId) {
-        form.setError("kbId", { message: "请选择知识库" });
+      if (values.kind === 0 && values.level === 2 && !values.kbId) {
+        form.setError("kbId", { message: "TOPIC 节点请选择知识库" });
         return;
       }
       if (values.kind === 2 && !values.mcpToolId?.trim()) {
@@ -769,11 +769,11 @@ function IntentNodeDialog({
                       name="kbId"
                       render={({ field }) => (
                           <FormItem>
-                            <FormLabel>知识库</FormLabel>
+                            <FormLabel>知识库{form.watch("level") === 2 ? "（必填）" : "（可选）"}</FormLabel>
                             <Select value={field.value} onValueChange={field.onChange}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="选择知识库" />
+                                  <SelectValue placeholder="请选择知识库" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
@@ -798,7 +798,7 @@ function IntentNodeDialog({
                           <FormItem>
                             <FormLabel>Collection 名称</FormLabel>
                             <FormControl>
-                              <Input placeholder="Milvus Collection 名称" {...field} />
+                              <Input placeholder="向量数据库 Collection 名称" {...field} />
                             </FormControl>
                             <FormMessage />
                           </FormItem>

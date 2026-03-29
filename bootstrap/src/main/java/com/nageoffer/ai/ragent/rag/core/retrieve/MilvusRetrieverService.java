@@ -28,6 +28,7 @@ import io.milvus.v2.service.vector.request.data.FloatVec;
 import io.milvus.v2.service.vector.response.SearchResp;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -39,6 +40,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "rag.vector.type", havingValue = "milvus", matchIfMissing = true)
 public class MilvusRetrieverService implements RetrieverService {
 
     private final EmbeddingService embeddingService;
@@ -71,7 +73,7 @@ public class MilvusRetrieverService implements RetrieverService {
                 .data(vectors)
                 .topK(retrieveParam.getTopK())
                 .searchParams(params)
-                .outputFields(List.of("doc_id", "content", "metadata"))
+                .outputFields(List.of("id", "content", "metadata"))
                 .build();
 
         SearchResp resp = milvusClient.search(req);
@@ -85,7 +87,7 @@ public class MilvusRetrieverService implements RetrieverService {
         // TODO 如果本次查询分数都较高，是否应该扩大查询范围？1.5倍？
         return results.get(0).stream()
                 .map(r -> new RetrievedChunk(
-                        Objects.toString(r.getEntity().get("doc_id"), ""),
+                        Objects.toString(r.getEntity().get("id"), ""),
                         Objects.toString(r.getEntity().get("content"), ""),
                         r.getScore()))
                 .collect(Collectors.toList());

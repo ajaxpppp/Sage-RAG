@@ -12,18 +12,44 @@
 
 作为拿个 offer 社群在 AI 领域的第一个项目，从架构设计到每一行代码都反复打磨，质量标准对齐之前 12306、短链接等项目，不砸自己招牌。
 
-## 项目说明
+## 项目介绍
 
-先和大家说一声，**项目开源地址认准 GitHub**，别走丢啦 👀 后续源码更新、版本发布、问题修复，都会优先同步在 GitHub 仓库。
+先和大家说一声，**项目开源地址认准 GitHub**，别走丢啦 👀 后续源码更新、版本发布、问题修复，优先同步 GitHub。
 
-- **GitHub**：https://github.com/nageoffer/ragent
-- **官方文档**：https://nageoffer.com/ragent
+如果你想系统补上 RAG / Agent / MCP 这块知识，或者想做一个真正能写进简历、面试里聊得起来的 AI 项目，Ragent 希望给你的，不只是一个能跑起来的 Demo，而是一套更接近真实工程落地的完整实践。
 
-如果你想系统补上 RAG / Agent / MCP 这块知识，或者想做一个真正能写进简历、面试里聊得起来的 AI 项目，Ragent 希望给你的，不只是一个“能跑起来”的 Demo，而是一套更接近真实工程落地的完整实践。
+- **GitHub**：[https://github.com/nageoffer/ragent](https://github.com/nageoffer/ragent)
+- **🌟官方文档（项目讲解、快速启动等）**：[https://nageoffer.com/ragent](https://nageoffer.com/ragent)
 
-官方文档里整理了 **什么是 RAG、如何在简历中写 RAG 项目、Prompt 入门、文档解析、Chunk 策略、Embedding、向量数据库、检索与生成策略、MCP、从零启动项目、Docker 部署** 等内容，适合边学边做，边做边写进简历。
+问答页面预览图：
 
-**欢迎顺手点个 Star 支持一下呀 ⭐** 你的每一个 Star，都是我持续打磨这个项目的动力 💪
+![](assets/qa-home.png)
+
+具体来说，Ragent 包含以下核心能力：
+
+- **多路检索引擎**：意图定向检索 + 全局向量检索并行执行，结果经去重、重排序后处理，兼顾精准度与召回率。
+
+- **意图识别与引导**：树形多级意图分类（领域→类目→话题），置信度不足时主动引导澄清，而非硬猜答案。
+- **问题重写与拆分**：多轮对话自动补全上下文，复杂问题拆为子问题分别检索，解决"说的不是想问的"。
+- **会话记忆管理**：保留近 `N` 轮对话，超限自动摘要压缩，控 `Token` 成本不丢上下文。
+- **模型路由与容错**：多模型优先级调度、首包探测、健康检查、自动降级，单模型故障不影响服务。
+- **MCP 工具集成**：意图非知识检索时自动提参调用业务工具，检索与工具调用无缝融合。
+- **文档入库ETL**：节点编排 `Pipeline`，从抓取、解析、增强、分块、向量化到写入 `Milvus`，灵活配置可扩展。
+- **全链路追踪**：重写、意图、检索、生成每个环节均有 `Trace` 记录，排查与调优有据可依。
+- **管理后台**：`React` 管理界面，覆盖知识库管理、意图树编辑、入库监控、链路追踪、系统设置。
+
+> [!NOTE]
+> **如果觉得项目有帮助，欢迎顺手点个 Star ⭐ 支持一下呀**。你的每一个 Star，都是我持续打磨这个项目的动力 💪
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=nageoffer%2Fragent&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/image?repos=nageoffer/ragent&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/image?repos=nageoffer/ragent&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/image?repos=nageoffer/ragent&type=date&legend=top-left" />
+ </picture>
+</a>
 
 ## 目录
 
@@ -58,7 +84,7 @@
 - [常见问题答疑](#常见问题答疑)
     - [1. 能够学到什么？](#1-能够学到什么)
     - [2. 适合人群](#2-适合人群)
-- [项目开源地址](#项目开源地址)
+- [为什么开源？](#为什么开源？)
 
 ## 为什么学习 AI 项目
 
@@ -98,7 +124,7 @@ AI 这波浪潮，Java 程序员已经躲不过去了。
 
 市面上打着 RAG 旗号的项目不少，但很多要么是玩具级 Demo，要么是概念包装。在学之前，先把这几个误区理清楚，避免踩坑。
 
-![](https://oss.open8gu.com/image-20260213144311586.png)
+![](assets/rag-misconceptions.png)
 
 ### 1. 调个 API 就算会 RAG 了
 
@@ -148,21 +174,7 @@ Ragent 是一个企业级 RAG 智能体平台，基于 Java 17 + Spring Boot 3 +
 
 它不是一个跑通 Demo 就收工的玩具项目，而是覆盖了 RAG 系统从文档入库到智能问答全链路的完整工程实现。你在企业里做 RAG 会遇到的问题——文档解析、分块策略、多路检索、意图识别、问题重写、会话记忆、模型容错、MCP 工具调用、链路追踪——Ragent 里都有对应的解决方案。
 
-![](https://oss.open8gu.com/ragent-architecture.svg)
-
-具体来说，Ragent 包含以下核心能力：
-
-- **多路检索引擎**：支持意图定向检索和全局向量检索两个通道并行执行，检索结果经过去重、重排序等后处理流水线，兼顾精准度和召回率。
-- **意图识别与引导**：基于树形结构的意图分类体系，支持多级意图（领域→类目→话题），识别置信度不足时主动引导用户澄清，而不是硬猜一个答案。
-- **问题重写与拆分**：多轮对话中自动补全上下文，复杂问题拆分为多个子问题分别检索，解决用户说的不是他想问的这个核心痛点。
-- **会话记忆管理**：保留最近 N 轮对话，超过阈值自动摘要压缩，既控制 Token 成本，又不丢关键上下文。
-- **模型路由与容错**：多模型候选、优先级调度、首包探测、健康检查、自动降级切换，一个模型挂了不影响服务可用性。
-- **MCP 工具集成**：当用户意图不是查知识库而是要调业务系统时，自动提取参数并执行对应工具，知识检索和工具调用在同一套流程里无缝融合。
-- **文档入库流水线**：基于节点编排的 Pipeline 架构，从文档抓取、解析、增强、分块、向量化到写入 Milvus，每一步可配置、可扩展、有日志。
-- **全链路追踪**：每次对话请求的每个环节（重写、意图、检索、生成）都有 Trace 记录，方便排查问题和优化效果。
-- **管理后台**：完整的 React 管理界面，涵盖知识库管理、意图树编辑、入库任务监控、链路追踪查看、系统设置等功能。
-
-一句话总结：**Ragent 是一个你可以直接拿来学习企业级 RAG 系统是怎么设计和落地的项目**。
+![](assets/ragent-architecture.svg)
 
 ## Ragent 核心设计
 
@@ -170,7 +182,7 @@ Ragent 是一个企业级 RAG 智能体平台，基于 Java 17 + Spring Boot 3 +
 
 Ragent 采用前后端分离的单体架构，后端按职责分为四个 Maven 模块：
 
-<img src="https://oss.open8gu.com/image-20260223130413104.png" width="50%" />
+<img src="assets/ragent-module-layering.png" width="50%" />
 
 这个分层不是为了炫技，而是解决实际问题：`framework` 层提供与业务无关的通用能力，`infra-ai` 层屏蔽不同模型供应商的差异，`bootstrap` 层专注业务逻辑。换模型供应商不用改业务代码，换业务逻辑不用动基础设施。
 
@@ -196,13 +208,13 @@ Ragent 采用前后端分离的单体架构，后端按职责分为四个 Maven 
 
 一次用户提问，在 Ragent 里经过的完整链路如下：
 
-![](https://oss.open8gu.com/image-20260223124143406.png)
+![](assets/ragent-chain.png)
 
 #### 2.2 多路检索架构
 
 检索是 RAG 系统的核心，Ragent 的检索引擎采用多通道并行 + 后处理流水线的架构：
 
-![](https://oss.open8gu.com/image-20260223124413871.png)
+![](assets/multi-channel-retrieval.png)
 
 每个通道独立执行、互不影响，通过线程池并行调度。后处理器按顺序串联，像流水线一样逐步精炼检索结果。
 
@@ -210,7 +222,7 @@ Ragent 采用前后端分离的单体架构，后端按职责分为四个 Maven 
 
 生产环境不可能只依赖一个模型供应商，Ragent 的模型路由机制解决的就是这个问题：
 
-![](https://oss.open8gu.com/image-20260223124613370.png)
+![](assets/model-routing-failover.png)
 
 关键设计：首包探测阶段会缓冲所有事件，确保模型切换时用户端不会收到半截的脏数据。
 
@@ -218,7 +230,7 @@ Ragent 采用前后端分离的单体架构，后端按职责分为四个 Maven 
 
 文档从上传到可检索，经过一条基于节点编排的 Pipeline：
 
-<img src="https://oss.open8gu.com/image-20260223124821415.png" width="25%" />
+<img src="assets/ingestion-pipeline.png" width="25%" />
 
 每个节点的配置存储在数据库中，支持条件执行和输出链式传递。每个任务和节点都有独立的执行日志，出了问题能精确定位到哪一步。
 
@@ -305,7 +317,7 @@ Ragent 提供完整的可视化控制台，覆盖**普通用户与管理员用�
 
 问答界面示例：
 
-![](https://oss.open8gu.com/iShot_2026-02-04_22.08.50.png)
+![](assets/qa-home.png)
 
 用户提交问题后，模型会实时生成回答结果，并提供良好的阅读体验：
 
@@ -316,7 +328,7 @@ Ragent 提供完整的可视化控制台，覆盖**普通用户与管理员用�
 
 回答示例：
 
-![](https://oss.open8gu.com/iShot_2026-02-04_22.08.51.png)
+![](assets/qa-answer.png)
 
 #### 5.2 管理后台
 
@@ -324,21 +336,21 @@ Ragent 提供功能完善的管理后台，用于系统配置与运行管理。�
 
 管理后台界面示例：
 
-![](https://oss.open8gu.com/iShot_2026-02-08_21.46.13.png)
+![](assets/admin-overview.png)
 
-![](https://oss.open8gu.com/iShot_2026-02-04_22.03.41.png)
+![](assets/admin-settings.png)
 
-![](https://oss.open8gu.com/iShot_2026-02-04_22.03.58.png)
+![](assets/admin-knowledge-base.png)
 
-![](https://oss.open8gu.com/iShot_2026-02-04_22.04.06.png)
+![](assets/admin-datasets.png)
 
-![](https://oss.open8gu.com/iShot_2026-02-04_22.04.34.png)
+![](assets/admin-trace.png)
 
-![](https://oss.open8gu.com/iShot_2026-02-04_22.04.44.png)
+![](assets/admin-models.png)
 
 为了避免传统系统常见的“毛坯界面”体验，Ragent 的控制台经过多轮 AI 辅助设计与优化，逐步迭代完善，最终呈现出当前简洁、美观且实用的界面效果。
 
-![](https://oss.open8gu.com/iShot_2026-02-04_22.06.50.png)
+![](assets/admin-theme.png)
 
 ### 6. 和市面上项目的区别
 
@@ -384,11 +396,11 @@ Ragent 不只是教你调 API，而是让你理解一个 RAG 系统从 0 到 1 �
 - **3-5 年经验的后端开发**：技术能力不差，但面试被问到 AI 相关问题答不上来，少了一个谈薪筹码。通过 Ragent 补上 RAG、Agent、MCP 这些知识点，面试时能聊得有深度。
 - **想跳槽到 AI 团队的开发者**：越来越多的 JD 要求有 AI 相关经验，Ragent 能帮你快速建立 RAG 系统的全局认知，面试时不再只是纸上谈兵。
 
-## 项目开源地址
+## 为什么开源？
 
-之前做拿个 offer 社群时，第一个业务系统 12306 选择了开源，收获了 1.5w+ Star，也得到了很多同学的认可和信任。这次 Ragent 作为社群在 AI 领域的第一个项目，同样选择开源——既然代码质量经得起检验，就没必要藏着掖着。
-
-> GitHub：[https://github.com/nageoffer/ragent](https://github.com/nageoffer/ragent)
+之前做拿个 offer 社群时，第一个业务系统 12306 选择了开源，收获了
+<a href="https://github.com/nageoffer/12306"><img src="https://img.shields.io/github/stars/nageoffer/12306?style=flat-square&logo=github&label=GitHub" style="vertical-align: middle;" /></a>
+<a href="https://gitee.com/nageoffer/12306/stargazers"><img src="https://gitee.com/nageoffer/12306/badge/star.svg?theme=dark" style="vertical-align: middle;" /></a>，也得到了很多同学的认可和信任。这次 Ragent 作为社群在 AI 领域的第一个项目，同样选择开源——既然代码质量经得起检验，就没必要藏着掖着。
 
 之所以选择开源，原因很简单：**对项目质量足够自信**。架构设计、代码实现、工程规范，每一行都经得起审视。不藏着掖着，好不好你 clone 下来自己看——目录结构、提交记录、注释规范，全是明牌。
 
@@ -401,4 +413,4 @@ Ragent 不只是教你调 API，而是让你理解一个 RAG 系统从 0 到 1 �
 - **可参与贡献**：发现 Bug 提 Issue，有优化思路提 PR。参与一个企业级 AI 开源项目，本身就是简历上的亮点。
 - **持续迭代更新**：项目会持续演进，Star 和 Watch 之后能第一时间获取新特性。
 
-如果你觉得项目还不错，去 GitHub 点个 Star 支持一下，这是对开源作者最好的认可！
+如果屏幕前的彦祖/亦菲觉得项目还不错，点个 Star 支持一下，这是对开源作者最好的认可！

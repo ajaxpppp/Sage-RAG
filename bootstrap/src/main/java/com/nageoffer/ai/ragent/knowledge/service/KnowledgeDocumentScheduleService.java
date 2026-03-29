@@ -37,4 +37,11 @@ public interface KnowledgeDocumentScheduleService {
      * @param documentDO 文档实体
      */
     void syncScheduleIfExists(KnowledgeDocumentDO documentDO);
+
+    /**
+     * 删除文档关联的定时任务及执行记录
+     *
+     * @param docId 文档ID
+     */
+    void deleteByDocId(String docId);
 }

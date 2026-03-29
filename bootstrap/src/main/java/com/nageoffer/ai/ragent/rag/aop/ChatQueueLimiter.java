@@ -58,6 +58,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.IntSupplier;
 
 /**
  * SSE 全局并发限流与排队处理
@@ -97,7 +98,7 @@ public class ChatQueueLimiter {
 
     @PostConstruct
     public void subscribeQueueNotify() {
-        pollNotifier = new PollNotifier();
+        pollNotifier = new PollNotifier(this::availablePermits);
         pollNotifier.startCleanup();
         RTopic topic = redissonClient.getTopic(NOTIFY_TOPIC);
         notifyListenerId = topic.addListener(String.class, (channel, msg) -> {
@@ -327,7 +328,7 @@ public class ChatQueueLimiter {
         boolean isNewConversation = conversationGroupService.findConversation(actualConversationId, userId) == null;
 
         memoryService.append(actualConversationId, userId, ChatMessage.user(question));
-        Long messageId = memoryService.append(actualConversationId, userId, ChatMessage.assistant(REJECT_MESSAGE));
+        String messageId = memoryService.append(actualConversationId, userId, ChatMessage.assistant(REJECT_MESSAGE));
 
         String title = isNewConversation ? resolveTitle(actualConversationId, userId) : "";
         if (isNewConversation && StrUtil.isBlank(title)) {
@@ -370,7 +371,7 @@ public class ChatQueueLimiter {
         sender.complete();
     }
 
-    private record RejectedContext(String conversationId, String taskId, Long messageId, String title) {
+    private record RejectedContext(String conversationId, String taskId, String messageId, String title) {
     }
 
     private record ClaimResult(boolean claimed, double score) {
@@ -440,6 +441,7 @@ public class ChatQueueLimiter {
     }
 
     private static final class PollNotifier {
+        private final IntSupplier permitSupplier;
         private final ScheduledExecutorService notifyExecutor = new ScheduledThreadPoolExecutor(
                 1,
                 r -> {
@@ -460,6 +462,10 @@ public class ChatQueueLimiter {
                     return thread;
                 }
         );
+
+        PollNotifier(IntSupplier permitSupplier) {
+            this.permitSupplier = permitSupplier;
+        }
 
         private record PollerEntry(Runnable poller, long registerTime) {
         }
@@ -483,6 +489,9 @@ public class ChatQueueLimiter {
                 do {
                     pendingNotifications.set(0);
                     try {
+                        if (permitSupplier.getAsInt() <= 0) {
+                            continue;
+                        }
                         for (PollerEntry entry : pollers.values()) {
                             entry.poller().run();
                         }

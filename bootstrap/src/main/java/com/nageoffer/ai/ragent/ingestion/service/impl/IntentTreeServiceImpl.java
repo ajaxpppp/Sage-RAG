@@ -53,7 +53,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.nageoffer.ai.ragent.rag.enums.IntentLevel.DOMAIN;
 
 @Service
 @RequiredArgsConstructor
@@ -114,16 +113,16 @@ public class IntentTreeServiceImpl extends ServiceImpl<IntentNodeMapper, IntentN
             throw new ClientException("意图标识已存在: " + requestParam.getIntentCode());
         }
 
-        if (Objects.equals(requestParam.getLevel(), DOMAIN.getCode())
+        if (Objects.equals(requestParam.getLevel(), IntentLevel.TOPIC.getCode())
                 && Objects.equals(requestParam.getKind(), IntentKind.KB.getCode())
                 && StrUtil.isBlank(requestParam.getKbId())) {
-            throw new ClientException("Domain类型的RAG检索意图识别时，必须指定目标知识库");
+            throw new ClientException("TOPIC级别的RAG检索节点必须指定目标知识库");
         }
 
         IntentNodeDO node = IntentNodeDO.builder()
                 .intentCode(requestParam.getIntentCode())
                 .kbId(
-                        StrUtil.isNotBlank(requestParam.getKbId()) ? Long.parseLong(requestParam.getKbId()) : null
+                        StrUtil.isNotBlank(requestParam.getKbId()) ? requestParam.getKbId() : null
                 )
                 .collectionName(
                         StrUtil.isNotBlank(requestParam.getKbId()) ? knowledgeBaseMapper.selectById(requestParam.getKbId()).getCollectionName() : null
@@ -199,6 +198,15 @@ public class IntentTreeServiceImpl extends ServiceImpl<IntentNodeMapper, IntentN
         if (req.getEnabled() != null) {
             node.setEnabled(req.getEnabled());
         }
+        if (req.getPromptSnippet() != null) {
+            node.setPromptSnippet(req.getPromptSnippet());
+        }
+        if (req.getPromptTemplate() != null) {
+            node.setPromptTemplate(req.getPromptTemplate());
+        }
+        if (req.getParamPromptTemplate() != null) {
+            node.setParamPromptTemplate(req.getParamPromptTemplate());
+        }
         node.setUpdateBy(UserContext.getUsername());
         this.updateById(node);
 
@@ -216,7 +224,7 @@ public class IntentTreeServiceImpl extends ServiceImpl<IntentNodeMapper, IntentN
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void batchEnableNodes(List<Long> ids) {
+    public void batchEnableNodes(List<String> ids) {
         List<IntentNodeDO> targetNodes = listAndValidateTargetNodes(ids);
         String operator = UserContext.getUsername();
         targetNodes.forEach(node -> {
@@ -229,11 +237,11 @@ public class IntentTreeServiceImpl extends ServiceImpl<IntentNodeMapper, IntentN
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void batchDisableNodes(List<Long> ids) {
+    public void batchDisableNodes(List<String> ids) {
         List<IntentNodeDO> targetNodes = listAndValidateTargetNodes(ids);
         List<IntentNodeDO> allActiveNodes = listActiveNodes();
         Map<String, List<IntentNodeDO>> childrenMap = buildChildrenMap(allActiveNodes);
-        Set<Long> targetIdSet = targetNodes.stream().map(IntentNodeDO::getId).collect(Collectors.toSet());
+        Set<String> targetIdSet = targetNodes.stream().map(IntentNodeDO::getId).collect(Collectors.toSet());
         for (IntentNodeDO targetNode : targetNodes) {
             List<IntentNodeDO> descendants = collectDescendants(targetNode.getIntentCode(), childrenMap);
             List<IntentNodeDO> enabledButNotSelected = descendants.stream()
@@ -260,11 +268,11 @@ public class IntentTreeServiceImpl extends ServiceImpl<IntentNodeMapper, IntentN
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void batchDeleteNodes(List<Long> ids) {
+    public void batchDeleteNodes(List<String> ids) {
         List<IntentNodeDO> targetNodes = listAndValidateTargetNodes(ids);
         List<IntentNodeDO> allActiveNodes = listActiveNodes();
         Map<String, List<IntentNodeDO>> childrenMap = buildChildrenMap(allActiveNodes);
-        Set<Long> targetIdSet = targetNodes.stream().map(IntentNodeDO::getId).collect(Collectors.toSet());
+        Set<String> targetIdSet = targetNodes.stream().map(IntentNodeDO::getId).collect(Collectors.toSet());
         for (IntentNodeDO targetNode : targetNodes) {
             List<IntentNodeDO> descendants = collectDescendants(targetNode.getIntentCode(), childrenMap);
             List<IntentNodeDO> notSelectedDescendants = descendants.stream()
@@ -397,16 +405,16 @@ public class IntentTreeServiceImpl extends ServiceImpl<IntentNodeMapper, IntentN
         return topK;
     }
 
-    private List<IntentNodeDO> listAndValidateTargetNodes(List<Long> ids) {
+    private List<IntentNodeDO> listAndValidateTargetNodes(List<String> ids) {
         Assert.notEmpty(ids, () -> new ClientException("请至少选择一个节点"));
-        List<Long> normalizedIds = ids.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
+        List<String> normalizedIds = ids.stream().filter(Objects::nonNull).distinct().collect(Collectors.toList());
         Assert.notEmpty(normalizedIds, () -> new ClientException("节点ID不能为空"));
         List<IntentNodeDO> targetNodes = this.list(new LambdaQueryWrapper<IntentNodeDO>()
                 .in(IntentNodeDO::getId, normalizedIds)
                 .eq(IntentNodeDO::getDeleted, 0));
         if (targetNodes.size() != normalizedIds.size()) {
-            Set<Long> existingIds = targetNodes.stream().map(IntentNodeDO::getId).collect(Collectors.toSet());
-            List<Long> missingIds = normalizedIds.stream()
+            Set<String> existingIds = targetNodes.stream().map(IntentNodeDO::getId).collect(Collectors.toSet());
+            List<String> missingIds = normalizedIds.stream()
                     .filter(id -> !existingIds.contains(id))
                     .limit(5)
                     .toList();

@@ -50,7 +50,7 @@ public class VectorIntentClassifier {
      */
     private List<IntentNode> rootNodes;
 
-    @PostConstruct
+    // @PostConstruct
     public void init() {
         // 1. 构建意图树
         this.rootNodes = IntentTreeFactory.buildIntentTree();

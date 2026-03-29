@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.knowledge.enums;
 
+import cn.hutool.core.util.StrUtil;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -59,5 +60,19 @@ public enum ProcessMode {
             }
         }
         return null;
+    }
+
+    /**
+     * 解析处理模式，空值或非法值抛出异常
+     */
+    public static ProcessMode normalize(String value) {
+        if (StrUtil.isBlank(value)) {
+            throw new IllegalArgumentException("处理模式不能为空");
+        }
+        ProcessMode result = fromValue(value);
+        if (result == null) {
+            throw new IllegalArgumentException("不支持的处理模式: " + value);
+        }
+        return result;
     }
 }

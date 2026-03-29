@@ -5,7 +5,7 @@ server:
 
 spring:
   application:
-    name: ragent-service
+    name: ragent${unique-name:}-service
 
   servlet:
     multipart:
@@ -13,11 +13,11 @@ spring:
       max-request-size: 100MB
 
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: org.postgresql.Driver
     type: com.zaxxer.hikari.HikariDataSource
-    username: root
-    password: root
-    url: jdbc:mysql://127.0.0.1:3306/ragent?characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&transformedBitIsBoolean=true&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: postgres
+    password: postgres
+    url: jdbc:postgresql://127.0.0.1:5432/ragent?client_encoding=UTF8
     hikari:
       connection-timeout: 5000
       idle-timeout: 600000
@@ -32,13 +32,22 @@ spring:
       port: 6379
 #      password: 123456
 
+rocketmq:
+  name-server: 127.0.0.1:9876
+  producer:
+    group: ragent-producer${unique-name:}_pg
+    send-message-timeout: 2000
+
 milvus:
   uri: http://localhost:19530
 
 rag:
+  vector:
+    type: pg  # 可选 milvus / pg
+
   default:
     collection-name: rag_default_store
-    dimension: 4096
+    dimension: 1536
     metric-type: COSINE
 
   query-rewrite:
@@ -61,6 +70,13 @@ rag:
     ttl-minutes: 60
     summary-max-chars: 200
     title-max-length: 30
+
+  semaphore:
+    document-upload:
+      name: rag:document:upload
+      max-concurrent: 10
+      max-wait-seconds: 5
+      lease-seconds: 300
 
   knowledge:
     schedule:
@@ -166,12 +182,12 @@ ai:
       - id: qwen-emb-8b
         provider: siliconflow
         model: Qwen/Qwen3-Embedding-8B
-        dimension: 4096
+        dimension: ${rag.default.dimension}
         priority: 1
       - id: qwen-emb-local
         provider: ollama
         model: qwen3-embedding:8b-fp16
-        dimension: 4096
+        dimension: ${rag.default.dimension}
         priority: 2
 
   rerank:

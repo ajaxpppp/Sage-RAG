@@ -40,4 +40,7 @@ public class IntentNodeUpdateRequest {
     private Integer kind;
     private Integer sortOrder;
     private Integer enabled;
+    private String promptSnippet;
+    private String promptTemplate;
+    private String paramPromptTemplate;
 }

@@ -17,6 +17,7 @@
 
 package com.nageoffer.ai.ragent.rag.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
@@ -48,6 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.nageoffer.ai.ragent.rag.constant.RAGConstant.CHAT_SYSTEM_PROMPT_PATH;
@@ -103,7 +105,13 @@ public class RAGChatServiceImpl implements RAGChatService {
         boolean allSystemOnly = subIntents.stream()
                 .allMatch(si -> intentResolver.isSystemOnly(si.nodeScores()));
         if (allSystemOnly) {
-            StreamCancellationHandle handle = streamSystemResponse(rewriteResult.rewrittenQuestion(), callback);
+            String customPrompt = subIntents.stream()
+                    .flatMap(si -> si.nodeScores().stream())
+                    .map(ns -> ns.getNode().getPromptTemplate())
+                    .filter(StrUtil::isNotBlank)
+                    .findFirst()
+                    .orElse(null);
+            StreamCancellationHandle handle = streamSystemResponse(rewriteResult.rewrittenQuestion(), history, customPrompt, callback);
             taskManager.bindHandle(taskId, handle);
             return;
         }
@@ -136,15 +144,22 @@ public class RAGChatServiceImpl implements RAGChatService {
 
     // ==================== LLM 响应 ====================
 
-    private StreamCancellationHandle streamSystemResponse(String question, StreamCallback callback) {
-        String systemPrompt = promptTemplateLoader.load(CHAT_SYSTEM_PROMPT_PATH);
+    private StreamCancellationHandle streamSystemResponse(String question, List<ChatMessage> history,
+                                                          String customPrompt, StreamCallback callback) {
+        String systemPrompt = StrUtil.isNotBlank(customPrompt)
+                ? customPrompt
+                : promptTemplateLoader.load(CHAT_SYSTEM_PROMPT_PATH);
+
+        List<ChatMessage> messages = new ArrayList<>();
+        messages.add(ChatMessage.system(systemPrompt));
+        if (CollUtil.isNotEmpty(history)) {
+            messages.addAll(history.subList(0, history.size() - 1));
+        }
+        messages.add(ChatMessage.user(question));
+
         ChatRequest req = ChatRequest.builder()
-                .messages(List.of(
-                        ChatMessage.system(systemPrompt),
-                        ChatMessage.user(question)
-                ))
+                .messages(messages)
                 .temperature(0.7D)
-                .topP(0.8D)
                 .thinking(false)
                 .build();
         return llmService.streamChat(req, callback);

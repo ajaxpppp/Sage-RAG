@@ -27,6 +27,7 @@ import io.milvus.v2.service.collection.request.CreateCollectionReq;
 import io.milvus.v2.service.collection.request.HasCollectionReq;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -36,6 +37,7 @@ import java.util.Map;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "rag.vector.type", havingValue = "milvus", matchIfMissing = true)
 public class MilvusVectorStoreAdmin implements VectorStoreAdmin {
 
     private final MilvusClientV2 milvusClient;
@@ -55,7 +57,7 @@ public class MilvusVectorStoreAdmin implements VectorStoreAdmin {
 
         fieldSchemaList.add(
                 CreateCollectionReq.FieldSchema.builder()
-                        .name("doc_id")
+                        .name("id")
                         .dataType(DataType.VarChar)
                         .maxLength(36)
                         .isPrimaryKey(true)
@@ -106,7 +108,7 @@ public class MilvusVectorStoreAdmin implements VectorStoreAdmin {
         CreateCollectionReq createReq = CreateCollectionReq.builder()
                 .collectionName(logicalName)
                 .collectionSchema(collectionSchema)
-                .primaryFieldName("doc_id")
+                .primaryFieldName("id")
                 .vectorFieldName("embedding")
                 .metricType(ragDefaultProperties.getMetricType())
                 .consistencyLevel(ConsistencyLevel.BOUNDED)

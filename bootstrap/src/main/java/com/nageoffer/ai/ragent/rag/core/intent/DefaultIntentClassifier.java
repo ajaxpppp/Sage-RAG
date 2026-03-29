@@ -32,7 +32,6 @@ import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.framework.convention.ChatRequest;
 import com.nageoffer.ai.ragent.infra.chat.LLMService;
 import com.nageoffer.ai.ragent.rag.core.prompt.PromptTemplateLoader;
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -62,27 +61,6 @@ public class DefaultIntentClassifier implements IntentClassifier, IntentNodeRegi
     private final IntentNodeMapper intentNodeMapper;
     private final PromptTemplateLoader promptTemplateLoader;
     private final IntentTreeCacheManager intentTreeCacheManager;
-
-    @PostConstruct
-    public void init() {
-        // 初始化时确保Redis缓存存在
-        ensureIntentTreeCached();
-        log.info("意图分类器初始化完成");
-    }
-
-    /**
-     * 确保Redis缓存中有意图树数据
-     * 如果缓存不存在，从数据库加载并保存到Redis
-     */
-    private void ensureIntentTreeCached() {
-        if (!intentTreeCacheManager.isCacheExists()) {
-            List<IntentNode> roots = loadIntentTreeFromDB();
-            if (!roots.isEmpty()) {
-                intentTreeCacheManager.saveIntentTreeToCache(roots);
-                log.info("意图树已从数据库加载并缓存到Redis");
-            }
-        }
-    }
 
     /**
      * 从Redis加载意图树并构建内存结构

@@ -36,9 +36,7 @@ import com.nageoffer.ai.ragent.ingestion.domain.settings.IndexerSettings;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceId;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorSpaceSpec;
 import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreAdmin;
-import io.milvus.v2.client.MilvusClientV2;
-import io.milvus.v2.service.vector.request.InsertReq;
-import io.milvus.v2.service.vector.response.InsertResp;
+import com.nageoffer.ai.ragent.rag.core.vector.VectorStoreService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -60,16 +58,16 @@ public class IndexerNode implements IngestionNode {
 
     private final ObjectMapper objectMapper;
     private final VectorStoreAdmin vectorStoreAdmin;
-    private final MilvusClientV2 milvusClient;
+    private final VectorStoreService vectorStoreService;
     private final RAGDefaultProperties ragDefaultProperties;
 
     public IndexerNode(ObjectMapper objectMapper,
                        VectorStoreAdmin vectorStoreAdmin,
-                       MilvusClientV2 milvusClient,
+                       VectorStoreService vectorStoreService,
                        RAGDefaultProperties ragDefaultProperties) {
         this.objectMapper = objectMapper;
         this.vectorStoreAdmin = vectorStoreAdmin;
-        this.milvusClient = milvusClient;
+        this.vectorStoreService = vectorStoreService;
         this.ragDefaultProperties = ragDefaultProperties;
     }
 
@@ -103,7 +101,13 @@ public class IndexerNode implements IngestionNode {
 
         ensureVectorSpace(collectionName);
         List<JsonObject> rows = buildRows(context, chunks, vectorArray, settings.getMetadataFields());
-        insertRows(collectionName, rows);
+
+        if (context.isSkipIndexerWrite()) {
+            // 调用方会在事务中统一写向量，此处只做校验和 chunkId/embedding 的填充（buildRows 已完成）
+            return NodeResult.ok("已准备 " + rows.size() + " 个分块（向量写入由调用方统一完成）");
+        }
+
+        insertRows(collectionName, context.getTaskId(), rows);
         return NodeResult.ok("已写入 " + rows.size() + " 个分块到集合 " + collectionName);
     }
 
@@ -138,16 +142,40 @@ public class IndexerNode implements IngestionNode {
         vectorStoreAdmin.ensureVectorSpace(spaceSpec);
     }
 
-    private void insertRows(String collectionName, List<JsonObject> rows) {
+    private void insertRows(String collectionName, String docId, List<JsonObject> rows) {
         if (rows == null || rows.isEmpty()) {
             return;
         }
-        InsertReq req = InsertReq.builder()
-                .collectionName(collectionName)
-                .data(rows)
-                .build();
-        InsertResp resp = milvusClient.insert(req);
-        log.info("Milvus 写入成功，集合={}，行数={}", collectionName, resp.getInsertCnt());
+
+        // 将 JsonObject 转换为 VectorChunk 列表
+        List<VectorChunk> chunks = rows.stream().map(row -> {
+            String chunkId = row.get("id").getAsString();
+            String content = row.get("content").getAsString();
+            JsonArray embeddingArray = row.getAsJsonArray("embedding");
+            float[] embedding = new float[embeddingArray.size()];
+            for (int i = 0; i < embeddingArray.size(); i++) {
+                embedding[i] = embeddingArray.get(i).getAsFloat();
+            }
+
+            Integer chunkIndex = null;
+            if (row.has("metadata") && row.get("metadata").isJsonObject()) {
+                JsonObject metadata = row.getAsJsonObject("metadata");
+                if (metadata.has("chunk_index")) {
+                    chunkIndex = metadata.get("chunk_index").getAsInt();
+                }
+            }
+
+            return VectorChunk.builder()
+                    .chunkId(chunkId)
+                    .content(content)
+                    .index(chunkIndex)
+                    .embedding(embedding)
+                    .build();
+        }).toList();
+
+        vectorStoreService.indexDocumentChunks(collectionName, docId, chunks);
+
+        log.info("向量写入成功，集合={}，行数={}", collectionName, chunks.size());
     }
 
     private int resolveDimension(List<VectorChunk> chunks) {
@@ -225,7 +253,7 @@ public class IndexerNode implements IngestionNode {
             }
 
             JsonObject row = new JsonObject();
-            row.addProperty("doc_id", chunkId);
+            row.addProperty("id", chunkId);
             row.addProperty("content", content);
             row.add("metadata", metadata);
             row.add("embedding", toJsonArray(vectors[i]));

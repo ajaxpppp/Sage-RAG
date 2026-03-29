@@ -36,15 +36,15 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Service
-public class MySQLConversationMemoryStore implements ConversationMemoryStore {
+public class JdbcConversationMemoryStore implements ConversationMemoryStore {
 
     private final ConversationService conversationService;
     private final ConversationMessageService conversationMessageService;
     private final MemoryProperties memoryProperties;
 
-    public MySQLConversationMemoryStore(ConversationService conversationService,
-                                        ConversationMessageService conversationMessageService,
-                                        MemoryProperties memoryProperties) {
+    public JdbcConversationMemoryStore(ConversationService conversationService,
+                                       ConversationMessageService conversationMessageService,
+                                       MemoryProperties memoryProperties) {
         this.conversationService = conversationService;
         this.conversationMessageService = conversationMessageService;
         this.memoryProperties = memoryProperties;
@@ -55,6 +55,7 @@ public class MySQLConversationMemoryStore implements ConversationMemoryStore {
         int maxMessages = resolveMaxHistoryMessages();
         List<ConversationMessageVO> dbMessages = conversationMessageService.listMessages(
                 conversationId,
+                userId,
                 maxMessages,
                 ConversationMessageOrder.DESC
         );
@@ -71,14 +72,14 @@ public class MySQLConversationMemoryStore implements ConversationMemoryStore {
     }
 
     @Override
-    public Long append(String conversationId, String userId, ChatMessage message) {
+    public String append(String conversationId, String userId, ChatMessage message) {
         ConversationMessageBO conversationMessage = ConversationMessageBO.builder()
                 .conversationId(conversationId)
                 .userId(userId)
                 .role(message.getRole().name().toLowerCase())
                 .content(message.getContent())
                 .build();
-        Long messageId = conversationMessageService.addMessage(conversationMessage);
+        String messageId = conversationMessageService.addMessage(conversationMessage);
 
         if (message.getRole() == ChatMessage.Role.USER) {
             ConversationCreateRequest conversation = ConversationCreateRequest.builder()
@@ -94,7 +95,7 @@ public class MySQLConversationMemoryStore implements ConversationMemoryStore {
 
     @Override
     public void refreshCache(String conversationId, String userId) {
-        // MySQL 直读模式，无需刷新缓存
+        // JDBC 直读模式，无需刷新缓存
     }
 
     private ChatMessage toChatMessage(ConversationMessageVO record) {

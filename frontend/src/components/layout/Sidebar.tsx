@@ -172,7 +172,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               <Bot className="h-5 w-5 text-white" />
             </div>
             <div style={{ fontFamily: sessionTitleFont }}>
-              <p className="text-base font-semibold text-[#1A1A1A]">RAG 智能问答</p>
+              <p className="text-base font-semibold text-[#1A1A1A]">Ragent AI 智能体</p>
               <p className="text-xs text-[#999999]">Powered by AI</p>
             </div>
           </div>
@@ -216,7 +216,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                   type="button"
                   className="mt-2 inline-flex items-center gap-2 rounded-full border border-white/80 bg-white/70 px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] transition-colors hover:bg-white"
                   onClick={() => {
-                    navigate("/admin");
+                    window.open("/admin", "_blank");
                     onClose();
                   }}
                 >
