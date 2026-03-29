@@ -1,5 +1,5 @@
 server:
-  port: 9090
+  port: 9999
   servlet:
     context-path: /api/ragent
 
@@ -104,7 +104,7 @@ ai:
         enabled: false
     siliconflow:
       url: https://api.siliconflow.cn
-      api-key: ${SILICONFLOW_API_KEY:sk-pplueuysxsqxtvoamttybpptxbatqnsozruajhhgfuasdtvy}
+      api-key: ${SILICONFLOW_API_KEY:sk-lmmeizdqfnrwumiberoufuibqicnfrrbtfestvvlxvfmofpn}
       endpoints:
         chat: /v1/chat/completions
         embedding: /v1/embeddings
@@ -113,6 +113,7 @@ ai:
       api-key: ${DUOJIE_API_KEY:sk-7AUdD3x9Jk4bTa9tkvyoZH1Qb576zIaSmI8FmA5LauMDiwr5}
       endpoints:
         chat: /chat/completions
+        enabled: false
 
   selection:
     failure-threshold: 2
@@ -122,10 +123,20 @@ ai:
     message-chunk-size: 1
 
   chat:
-    default-model: gpt-5.2
-    deep-thinking-model: gpt-5.2
+    default-model: GLM-4.6
+    deep-thinking-model: GLM-4.6
     candidates:
-      - id: gpt-5.2
+      - id: GLM-4.6
+        provider: siliconflow
+        model: GLM-4.6
+        supports-thinking: true
+        priority: 0
+      - id: glm-4.7
+        provider: siliconflow
+        model: Pro/zai-org/GLM-4.7
+        supports-thinking: true
+        priority: 1
+      - id: claude-sonnet-4-5
         provider: duojie
         model: gpt-5.2
         supports-thinking: true
