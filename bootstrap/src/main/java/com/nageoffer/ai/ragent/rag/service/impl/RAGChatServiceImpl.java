@@ -118,7 +118,7 @@ public class RAGChatServiceImpl implements RAGChatService {
 
         RetrievalContext ctx = retrievalEngine.retrieve(subIntents, DEFAULT_TOP_K);
         if (ctx.isEmpty()) {
-            StreamCancellationHandle handle = streamSystemResponse(rewriteResult.rewrittenQuestion(), callback);
+            StreamCancellationHandle handle = streamSystemResponse(rewriteResult.rewrittenQuestion(), history, null, callback);
             taskManager.bindHandle(taskId, handle);
             return;
         }
