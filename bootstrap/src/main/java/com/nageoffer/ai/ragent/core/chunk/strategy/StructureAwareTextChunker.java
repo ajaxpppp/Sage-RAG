@@ -57,6 +57,9 @@ public class StructureAwareTextChunker implements ChunkingStrategy {
     public List<VectorChunk> chunk(String text, ChunkingOptions config) {
         if (StrUtil.isBlank(text)) return List.of();
 
+        // 统一行尾：Windows \r\n → \n，老 Mac \r → \n，避免 \r 残留导致空行/标题识别失败
+        text = text.replace("\r\n", "\n").replace("\r", "\n");
+
         TextBoundaryOptions opts = (TextBoundaryOptions) config;
         int effectiveTarget = opts.targetChars();
         int effectiveMax = opts.maxChars();

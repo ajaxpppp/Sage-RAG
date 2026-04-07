@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package com.nageoffer.ai.ragent.infra.http;
+package com.nageoffer.ai.ragent.knowledge.schedule;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import okhttp3.MediaType;
+import lombok.Builder;
+import lombok.Getter;
 
-/**
- * HTTP 媒体类型常量类
- * 提供常用的 HTTP Content-Type 媒体类型定义
- */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class HttpMediaTypes {
+import java.util.Date;
 
-    /**
-     * JSON 媒体类型，使用 UTF-8 字符集
-     * 用于 OkHttp 请求中的 MediaType 对象
-     */
-    public static final MediaType JSON = MediaType.get("application/json; charset=utf-8");
+@Getter
+@Builder
+public class ScheduleStateContext {
+
+    private final String scheduleId;
+    private final String execId;
+    private final String cronExpr;
+    private final Date startTime;
+    private final Date nextRunTime;
 }
