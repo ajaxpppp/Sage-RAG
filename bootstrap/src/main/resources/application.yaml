@@ -1,5 +1,5 @@
 server:
-  port: 9090
+  port: 29090
   servlet:
     context-path: /api/ragent
 
@@ -17,7 +17,7 @@ spring:
     type: com.zaxxer.hikari.HikariDataSource
     username: postgres
     password: postgres
-    url: jdbc:postgresql://127.0.0.1:5432/ragent?client_encoding=UTF8
+    url: jdbc:postgresql://127.0.0.1:25432/ragent?client_encoding=UTF8
     hikari:
       connection-timeout: 5000
       idle-timeout: 600000
@@ -29,17 +29,17 @@ spring:
   data:
     redis:
       host: 127.0.0.1
-      port: 6379
+      port: 26379
       password: 123456
 
 rocketmq:
-  name-server: 127.0.0.1:9876
+  name-server: 127.0.0.1:29876
   producer:
     group: ragent-producer${unique-name:}_pg
     send-message-timeout: 2000
 
 milvus:
-  uri: http://localhost:19530
+  uri: http://localhost:29530
 
 rag:
   vector:
@@ -86,7 +86,7 @@ rag:
   mcp:
     servers:
       - name: default
-        url: http://localhost:9099
+        url: http://localhost:29099
 
   search:
     channels:
@@ -135,16 +135,17 @@ ai:
     message-chunk-size: 1
 
   chat:
-    default-model: qwen3-max
-    deep-thinking-model: qwen3-max
+    default-model: qwen3-local
+    deep-thinking-model: qwen3-local
     candidates:
+      - id: qwen3-local
+        provider: ollama
+        model: qwen3:0.6b
+        supports-thinking: true
+        priority: 1
       - id: qwen-plus
         provider: bailian
         model: qwen-plus-latest
-        priority: 1
-      - id: qwen3-local
-        provider: ollama
-        model: qwen3:8b-fp16
         priority: 2
       - id: qwen3-max
         provider: bailian
@@ -193,7 +194,7 @@ ai:
         priority: 100
 
 rustfs:
-  url: http://localhost:9000
+  url: http://localhost:29000
   access-key-id: rustfsadmin
   secret-access-key: rustfsadmin
 

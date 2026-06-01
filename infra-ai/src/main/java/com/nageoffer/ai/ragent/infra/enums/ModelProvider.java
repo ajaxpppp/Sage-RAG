@@ -49,6 +49,11 @@ public enum ModelProvider {
     AI_HUB_MIX("aihubmix"),
 
     /**
+     * 多杰 AI 模型服务
+     */
+    DUO_JIE("duojie"),
+
+    /**
      * 空实现，用于测试或占位
      */
     NOOP("noop");
