@@ -44,9 +44,9 @@ public enum ModelProvider {
     SILICON_FLOW("siliconflow"),
 
     /**
-     * 多杰 AI 模型服务（OpenAI 兼容）
+     * 推理时代 AI 模型服务
      */
-    DUO_JIE("duojie"),
+    AI_HUB_MIX("aihubmix"),
 
     /**
      * 空实现，用于测试或占位

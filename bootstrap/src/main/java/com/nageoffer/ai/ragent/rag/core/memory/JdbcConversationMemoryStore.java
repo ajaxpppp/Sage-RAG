@@ -20,12 +20,12 @@ package com.nageoffer.ai.ragent.rag.core.memory;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.nageoffer.ai.ragent.rag.config.MemoryProperties;
-import com.nageoffer.ai.ragent.rag.controller.request.ConversationCreateRequest;
 import com.nageoffer.ai.ragent.rag.controller.vo.ConversationMessageVO;
 import com.nageoffer.ai.ragent.framework.convention.ChatMessage;
 import com.nageoffer.ai.ragent.rag.enums.ConversationMessageOrder;
 import com.nageoffer.ai.ragent.rag.service.ConversationMessageService;
 import com.nageoffer.ai.ragent.rag.service.ConversationService;
+import com.nageoffer.ai.ragent.rag.service.bo.ConversationCreateBO;
 import com.nageoffer.ai.ragent.rag.service.bo.ConversationMessageBO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -78,11 +78,13 @@ public class JdbcConversationMemoryStore implements ConversationMemoryStore {
                 .userId(userId)
                 .role(message.getRole().name().toLowerCase())
                 .content(message.getContent())
+                .thinkingContent(message.getThinkingContent())
+                .thinkingDuration(message.getThinkingDuration())
                 .build();
         String messageId = conversationMessageService.addMessage(conversationMessage);
 
         if (message.getRole() == ChatMessage.Role.USER) {
-            ConversationCreateRequest conversation = ConversationCreateRequest.builder()
+            ConversationCreateBO conversation = ConversationCreateBO.builder()
                     .conversationId(conversationId)
                     .userId(userId)
                     .question(message.getContent())
@@ -102,28 +104,24 @@ public class JdbcConversationMemoryStore implements ConversationMemoryStore {
         if (record == null || StrUtil.isBlank(record.getContent())) {
             return null;
         }
-        ChatMessage.Role role = ChatMessage.Role.fromString(record.getRole());
-        return new ChatMessage(role, record.getContent());
+        return new ChatMessage(
+                ChatMessage.Role.fromString(record.getRole()),
+                record.getContent()
+        );
     }
 
     private List<ChatMessage> normalizeHistory(List<ChatMessage> messages) {
         if (messages == null || messages.isEmpty()) {
             return List.of();
         }
-        List<ChatMessage> cleaned = messages.stream()
-                .filter(this::isHistoryMessage)
-                .toList();
-        if (cleaned.isEmpty()) {
-            return List.of();
-        }
         int start = 0;
-        while (start < cleaned.size() && cleaned.get(start).getRole() == ChatMessage.Role.ASSISTANT) {
+        while (start < messages.size() && messages.get(start).getRole() == ChatMessage.Role.ASSISTANT) {
             start++;
         }
-        if (start >= cleaned.size()) {
+        if (start >= messages.size()) {
             return List.of();
         }
-        return cleaned.subList(start, cleaned.size());
+        return messages.subList(start, messages.size());
     }
 
     private boolean isHistoryMessage(ChatMessage message) {

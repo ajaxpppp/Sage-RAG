@@ -33,6 +33,7 @@ export interface KnowledgeDocument {
   updatedBy?: string | null;
   createTime?: string | null;
   updateTime?: string | null;
+  chunksEdited?: boolean | null;
 }
 
 export interface KnowledgeChunk {
@@ -245,6 +246,9 @@ export const updateDocument = async (docId: string, data: {
   chunkStrategy?: string;
   chunkConfig?: string;
   pipelineId?: string;
+  sourceLocation?: string;
+  scheduleEnabled?: number;
+  scheduleCron?: string;
 }): Promise<void> => {
   await api.put(`/knowledge-base/docs/${docId}`, data);
 };
@@ -307,28 +311,26 @@ export const deleteChunk = async (docId: string, chunkId: string): Promise<void>
   await api.delete(`/knowledge-base/docs/${docId}/chunks/${chunkId}`);
 };
 
-export const enableChunk = async (docId: string, chunkId: string): Promise<void> => {
-  await api.post(`/knowledge-base/docs/${docId}/chunks/${chunkId}/enable`);
-};
-
-export const disableChunk = async (docId: string, chunkId: string): Promise<void> => {
-  await api.post(`/knowledge-base/docs/${docId}/chunks/${chunkId}/disable`);
-};
-
-export const batchEnableChunks = async (docId: string, chunkIds?: Array<string | number>): Promise<void> => {
-  await api.post(`/knowledge-base/docs/${docId}/chunks/batch-enable`, {
-    chunkIds: chunkIds && chunkIds.length ? chunkIds : undefined
+export const toggleChunk = async (docId: string, chunkId: string, enabled: boolean): Promise<void> => {
+  await api.patch(`/knowledge-base/docs/${docId}/chunks/${chunkId}/enable`, null, {
+    params: { value: enabled }
   });
 };
 
-export const batchDisableChunks = async (docId: string, chunkIds?: Array<string | number>): Promise<void> => {
-  await api.post(`/knowledge-base/docs/${docId}/chunks/batch-disable`, {
-    chunkIds: chunkIds && chunkIds.length ? chunkIds : undefined
-  });
+export const batchToggleChunks = async (
+  docId: string,
+  enabled: boolean,
+  chunkIds: Array<string | number>
+): Promise<void> => {
+  await api.patch(
+    `/knowledge-base/docs/${docId}/chunks/batch-enable`,
+    { chunkIds },
+    { params: { value: enabled } }
+  );
 };
 
-export const rebuildChunks = async (docId: string): Promise<void> => {
-  await api.post(`/knowledge-base/docs/${docId}/chunks/rebuild`);
+export const previewDocument = async (docId: string): Promise<string> => {
+  return api.get<unknown, string>(`/knowledge-base/docs/${docId}/preview`);
 };
 
 // 文档分块日志管理
