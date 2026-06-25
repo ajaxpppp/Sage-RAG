@@ -6,7 +6,7 @@ services:
     platform: linux/amd64
     container_name: rmqnamesrv
     ports:
-      - "9876:9876"
+      - "29876:9876"
     environment:
       JAVA_OPT_EXT: "-Xms256m -Xmx400m"
     command: sh mqnamesrv
@@ -24,12 +24,12 @@ services:
     platform: linux/amd64
     container_name: rmqbroker
     ports:
-      - "10912:10912"
-      - "10911:10911"
-      - "10909:10909"
-      - "8080:8080"
-      - "8081:8081"
-      - "8082:8082"                              # ← dashboard 端口也从这里暴露
+      - "20912:10912"
+      - "20911:10911"
+      - "20909:10909"
+      - "28080:8080"
+      - "28081:8081"
+      - "28082:8082"                              # ← dashboard 端口也从这里暴露
     environment:
       NAMESRV_ADDR: "rmqnamesrv:9876"
       JAVA_OPT_EXT: "-Xms512m -Xmx512m"

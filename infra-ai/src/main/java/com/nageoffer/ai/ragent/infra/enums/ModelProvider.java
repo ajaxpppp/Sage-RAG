@@ -44,14 +44,14 @@ public enum ModelProvider {
     SILICON_FLOW("siliconflow"),
 
     /**
-     * DuoJie AI model service.
-     */
-    DUO_JIE("duojie"),
-
-    /**
      * 推理时代 AI 模型服务
      */
     AI_HUB_MIX("aihubmix"),
+
+    /**
+     * 多杰 AI 模型服务
+     */
+    DUO_JIE("duojie"),
 
     /**
      * 空实现，用于测试或占位

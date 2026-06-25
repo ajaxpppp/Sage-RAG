@@ -14,8 +14,8 @@ services:
       - "rustfsadmin"
       - "/data"
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "29000:9000"
+      - "29001:9001"
     volumes:
       - rustfs-data:/data
     restart: unless-stopped
@@ -54,8 +54,8 @@ services:
     volumes:
       - milvus-data:/var/lib/milvus
     ports:
-      - "19530:19530"
-      - "9091:9091"
+      - "29530:19530"
+      - "29091:9091"
     depends_on:
       - etcd
       - rustfs
@@ -71,7 +71,7 @@ services:
     environment:
       MILVUS_URL: milvus-standalone:19530
     ports:
-      - "8000:3000"
+      - "28000:3000"
     depends_on:
       - standalone
     deploy:
