@@ -49,17 +49,19 @@ rag:
     collection-name: rag_default_store
     dimension: 1536
     metric-type: COSINE
+    sse-timeout-ms: 300000  # SSE 全局超时（毫秒），默认 5 分钟
 
   query-rewrite:
     enabled: true
-    max-history-messages: 4
-    max-history-chars: 500
+
+  rerank:
+    enabled: true
 
   rate-limit:
     global:
       enabled: true
-      max-concurrent: 1
-      max-wait-seconds: 3
+      max-concurrent: 10
+      max-wait-seconds: 15
       lease-seconds: 30
       poll-interval-ms: 200
 
@@ -67,7 +69,6 @@ rag:
     history-keep-turns: 4
     summary-start-turns: 5
     summary-enabled: true
-    ttl-minutes: 60
     summary-max-chars: 200
     title-max-length: 30
 
@@ -96,6 +97,7 @@ rag:
         confidence-threshold: 0.6
         top-k-multiplier: 3
       intent-directed:
+        enabled: true
         min-intent-score: 0.4
         top-k-multiplier: 2
 
@@ -109,15 +111,19 @@ ai:
       url: http://localhost:11434
       endpoints:
         chat: /v1/chat/completions
-        embedding: /api/embed
-        enabled: false
+        embedding: /v1/embeddings
     bailian:
       url: https://dashscope.aliyuncs.com
       api-key: ${BAILIAN_API_KEY:}
       endpoints:
         chat: /compatible-mode/v1/chat/completions
         rerank: /api/v1/services/rerank/text-rerank/text-rerank
-        enabled: false
+    aihubmix:
+      url: https://aihubmix.com
+      api-key: ${AIHUBMIX_API_KEY:}
+      endpoints:
+        chat: /v1/chat/completions
+        embedding: /v1/embeddings
     siliconflow:
       url: https://api.siliconflow.cn
       api-key: ${SILICONFLOW_API_KEY:sk-lmmeizdqfnrwumiberoufuibqicnfrrbtfestvvlxvfmofpn}
@@ -161,6 +167,10 @@ ai:
         provider: bailian
         model: qwen-plus-latest
         priority: 1
+      - id: qwen3-local
+        provider: ollama
+        model: qwen3:8b-fp16
+        priority: 2
       - id: qwen3-max
         provider: bailian
         model: qwen3-max
@@ -170,11 +180,11 @@ ai:
         provider: siliconflow
         model: Pro/zai-org/GLM-4.7
         supports-thinking: true
-        priority: 0
-      - id: qwen3-local
-        provider: ollama
-        model: qwen3:8b-fp16
-        priority: 2
+        priority: 4
+      - id: gpt-5.4
+        provider: aihubmix
+        model: gpt-5.4
+        priority: 5
 
   embedding:
     default-model: qwen-emb-8b
@@ -189,6 +199,11 @@ ai:
         model: qwen3-embedding:8b-fp16
         dimension: ${rag.default.dimension}
         priority: 2
+      - id: text-embedding-3-large
+        provider: aihubmix
+        model: text-embedding-3-large
+        dimension: ${rag.default.dimension}
+        priority: 3
 
   rerank:
     default-model: qwen3-rerank
@@ -206,6 +221,21 @@ rustfs:
   url: http://localhost:9000
   access-key-id: rustfsadmin
   secret-access-key: rustfsadmin
+  # 多模态解析产物 bucket（PDF 抽出来的图片、未来 PNG 原图等）
+  # 与用户上传的原始文档 bucket 隔离
+  asset-bucket: ragent-assets
+
+# MinerU SaaS API 配置（PDF / Word / PPT 走 MinerU 解析）
+mineru:
+  api-url: https://mineru.net/api/v4
+  api-key: ${MINERU_API_KEY:}
+  poll-interval-seconds: 5
+  timeout-seconds: 300
+  enable-table: true
+  enable-formula: true
+  ocr: false
+  language: ch
+  concurrency-limit: 5
 
 sa-token:
   token-name: Authorization
@@ -218,3 +248,5 @@ sa-token:
 
 app:
   demo-mode: false
+  eval:
+    enabled: true

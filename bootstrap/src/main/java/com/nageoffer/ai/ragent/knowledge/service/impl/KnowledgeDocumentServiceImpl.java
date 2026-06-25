@@ -22,6 +22,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -31,11 +32,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nageoffer.ai.ragent.core.chunk.ChunkEmbeddingService;
 import com.nageoffer.ai.ragent.core.chunk.ChunkingMode;
 import com.nageoffer.ai.ragent.core.chunk.ChunkingOptions;
-import com.nageoffer.ai.ragent.core.chunk.ChunkingStrategy;
-import com.nageoffer.ai.ragent.core.chunk.ChunkingStrategyFactory;
+import com.nageoffer.ai.ragent.core.chunk.StructuredChunkingService;
 import com.nageoffer.ai.ragent.core.chunk.VectorChunk;
+import com.nageoffer.ai.ragent.core.parser.BlockTextRenderer;
+import com.nageoffer.ai.ragent.core.parser.DocumentParser;
 import com.nageoffer.ai.ragent.core.parser.DocumentParserSelector;
-import com.nageoffer.ai.ragent.core.parser.ParserType;
+import com.nageoffer.ai.ragent.core.parser.model.ParsedDocument;
 import com.nageoffer.ai.ragent.framework.context.UserContext;
 import com.nageoffer.ai.ragent.framework.exception.ClientException;
 import com.nageoffer.ai.ragent.framework.mq.producer.MessageQueueProducer;
@@ -45,6 +47,7 @@ import com.nageoffer.ai.ragent.ingestion.domain.context.IngestionContext;
 import com.nageoffer.ai.ragent.ingestion.domain.pipeline.PipelineDefinition;
 import com.nageoffer.ai.ragent.ingestion.engine.IngestionEngine;
 import com.nageoffer.ai.ragent.ingestion.service.IngestionPipelineService;
+import com.nageoffer.ai.ragent.ingestion.util.MimeTypeDetector;
 import com.nageoffer.ai.ragent.knowledge.config.KnowledgeScheduleProperties;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeChunkCreateRequest;
 import com.nageoffer.ai.ragent.knowledge.controller.request.KnowledgeDocumentPageRequest;
@@ -55,9 +58,11 @@ import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentChunkLog
 import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentSearchVO;
 import com.nageoffer.ai.ragent.knowledge.controller.vo.KnowledgeDocumentVO;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeBaseDO;
+import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeChunkDO;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentChunkLogDO;
 import com.nageoffer.ai.ragent.knowledge.dao.entity.KnowledgeDocumentDO;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeBaseMapper;
+import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeChunkMapper;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentChunkLogMapper;
 import com.nageoffer.ai.ragent.knowledge.dao.mapper.KnowledgeDocumentMapper;
 import com.nageoffer.ai.ragent.knowledge.enums.DocumentStatus;
@@ -90,6 +95,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -99,7 +105,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KnowledgeDocumentMapper documentMapper;
     private final DocumentParserSelector parserSelector;
-    private final ChunkingStrategyFactory chunkingStrategyFactory;
+    private final StructuredChunkingService structuredChunkingService;
     private final FileStorageService fileStorageService;
     private final VectorStoreService vectorStoreService;
     private final KnowledgeChunkService knowledgeChunkService;
@@ -110,6 +116,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private final IngestionEngine ingestionEngine;
     private final ChunkEmbeddingService chunkEmbeddingService;
     private final KnowledgeDocumentChunkLogMapper chunkLogMapper;
+    private final KnowledgeChunkMapper chunkMapper;
     private final TransactionOperations transactionOperations;
     private final MessageQueueProducer messageQueueProducer;
     private final KnowledgeScheduleProperties scheduleProperties;
@@ -302,13 +309,44 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         ChunkingOptions config = buildChunkingOptions(chunkingMode, documentDO);
 
         long extractStart = System.currentTimeMillis();
+
+        // 读出全量字节(与 runPipelineProcess 一致)，用于 MIME 探测 + parseStructured
+        byte[] fileBytes;
         try (InputStream is = fileStorageService.openStream(documentDO.getFileUrl())) {
-            String text = parserSelector.select(ParserType.TIKA.getType()).extractText(is, documentDO.getDocName());
+            fileBytes = is.readAllBytes();
+        } catch (Exception e) {
+            throw new RuntimeException("读取文件内容失败：docId=" + documentDO.getId(), e);
+        }
+
+        if (fileBytes.length == 0) {
+            throw new RuntimeException("文件内容为空：docId=" + documentDO.getId());
+        }
+        try {
+            // 按 MIME 路由(与 PIPELINE/ParserNode 同一套规则)：PDF/Word/PPT 命中 MinerU，不再硬编码 Tika
+            String docName = documentDO.getDocName();
+            String mimeType = MimeTypeDetector.detect(fileBytes, docName);
+            if (mimeType == null) {
+                throw new RuntimeException("无法识别文件 MIME 类型：docId=" + documentDO.getId() + ", docName=" + docName);
+            }
+
+            DocumentParser parser = parserSelector.selectByMimeType(mimeType);
+            if (parser == null) {
+                throw new RuntimeException("未找到 MIME [" + mimeType + "] 对应的解析器,docId=" + documentDO.getId());
+            }
+            log.info("文档分块-文本提取 docId={} docName={} fileType={} mimeType={} 命中解析器={}",
+                    documentDO.getId(), docName, documentDO.getFileType(), mimeType, parser.getParserType());
+
+            // MinerU 仅实现 parseStructured（未覆写 extractText），统一走结构化解析路径
+            Map<String, Object> options = new HashMap<>();
+            options.put("sourceFile", docName);
+            ParsedDocument parsed = parser.parseStructured(fileBytes, mimeType, options);
+            // blocks 非空走 block-aware（表格/列表等结构化切分），否则用拍平文本走 legacy 策略
+            String text = BlockTextRenderer.render(parsed.blocks());
             long extractDuration = System.currentTimeMillis() - extractStart;
 
-            ChunkingStrategy chunkingStrategy = chunkingStrategyFactory.requireStrategy(chunkingMode);
             long chunkStart = System.currentTimeMillis();
-            List<VectorChunk> chunks = chunkingStrategy.chunk(text, config);
+            List<VectorChunk> chunks = structuredChunkingService.chunk(
+                    parsed.blocks(), text, chunkingMode, config, null);
             long chunkDuration = System.currentTimeMillis() - chunkStart;
 
             long embedStart = System.currentTimeMillis();
@@ -456,7 +494,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 ChunkingMode chunkingMode = ChunkingMode.fromValue(requestParam.getChunkStrategy());
                 String chunkConfig = validateAndNormalizeChunkConfig(chunkingMode, requestParam.getChunkConfig());
                 updateWrapper.set(KnowledgeDocumentDO::getChunkStrategy, chunkingMode.getValue());
-                updateWrapper.set(KnowledgeDocumentDO::getChunkConfig, chunkConfig);
+                updateWrapper.setSql("chunk_config = CAST({0} AS jsonb)", chunkConfig);
                 updateWrapper.set(KnowledgeDocumentDO::getPipelineId, null);
             } else {
                 if (!StringUtils.hasText(requestParam.getPipelineId())) {
@@ -538,8 +576,29 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 .eq(requestParam.getStatus() != null && !requestParam.getStatus().isBlank(), KnowledgeDocumentDO::getStatus, requestParam.getStatus())
                 .orderByDesc(KnowledgeDocumentDO::getCreateTime);
 
-        return documentMapper.selectPage(pageParam, queryWrapper)
+        IPage<KnowledgeDocumentVO> result = documentMapper.selectPage(pageParam, queryWrapper)
                 .convert(each -> BeanUtil.toBean(each, KnowledgeDocumentVO.class));
+
+        List<String> docIds = result.getRecords().stream()
+                .map(KnowledgeDocumentVO::getId)
+                .collect(Collectors.toList());
+        Set<String> editedDocIds = findEditedDocIds(docIds);
+        result.getRecords().forEach(vo -> vo.setChunksEdited(editedDocIds.contains(vo.getId())));
+
+        return result;
+    }
+
+    private Set<String> findEditedDocIds(List<String> docIds) {
+        if (docIds == null || docIds.isEmpty()) {
+            return Collections.emptySet();
+        }
+        QueryWrapper<KnowledgeChunkDO> wrapper = new QueryWrapper<>();
+        wrapper.select("DISTINCT doc_id")
+                .in("doc_id", docIds)
+                .apply("update_time > create_time + INTERVAL '1 second'");
+        return chunkMapper.selectObjs(wrapper).stream()
+                .map(String::valueOf)
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -790,6 +849,22 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         } catch (Exception e) {
             log.warn("分块参数解析失败: {}", json, e);
             return Map.of();
+        }
+    }
+
+    @Override
+    public String preview(String docId) {
+        KnowledgeDocumentDO documentDO = documentMapper.selectById(docId);
+        Assert.notNull(documentDO, () -> new ClientException("文档不存在"));
+        if (!"markdown".equalsIgnoreCase(documentDO.getFileType())) {
+            throw new ClientException("仅支持预览 markdown 格式文档");
+        }
+        try (InputStream in = fileStorageService.openStream(documentDO.getFileUrl())) {
+            return new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (ClientException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ClientException("读取文档内容失败: " + e.getMessage());
         }
     }
 

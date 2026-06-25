@@ -50,14 +50,11 @@ public class RAGConfigProperties {
     private Boolean queryRewriteEnabled;
 
     /**
-     * 改写时用于承接上下文的最大历史消息数
+     * Rerank 重排序功能开关
+     * <p>
+     * 控制是否启用 Rerank 后置处理器对召回结果进行重排序
+     * 默认值：{@code true}
      */
-    @Value("${rag.query-rewrite.max-history-messages:4}")
-    private Integer queryRewriteMaxHistoryMessages;
-
-    /**
-     * 改写时用于承接上下文的最大字符数
-     */
-    @Value("${rag.query-rewrite.max-history-chars:500}")
-    private Integer queryRewriteMaxHistoryChars;
+    @Value("${rag.rerank.enabled:true}")
+    private Boolean rerankEnabled;
 }

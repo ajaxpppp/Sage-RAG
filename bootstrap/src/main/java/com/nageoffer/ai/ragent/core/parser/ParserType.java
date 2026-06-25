@@ -28,14 +28,24 @@ import lombok.RequiredArgsConstructor;
 public enum ParserType {
 
     /**
-     * Tika 解析器（支持 PDF、Word、Excel、PPT 等多种格式）
+     * Tika 解析器（用于 Text 等基础格式）
      */
     TIKA("Tika"),
 
     /**
      * Markdown 解析器
      */
-    MARKDOWN("Markdown");
+    MARKDOWN("Markdown"),
+
+    /**
+     * Apache POI Excel 解析器（合并单元格 / 多行表头 / 超链接）
+     */
+    EXCEL_POI("ExcelPoi"),
+
+    /**
+     * MinerU SaaS 解析器（PDF / Word / PPT / Excel，含表格、图片、版面）
+     */
+    MINERU("MinerU");
 
     /**
      * 解析器类型名称

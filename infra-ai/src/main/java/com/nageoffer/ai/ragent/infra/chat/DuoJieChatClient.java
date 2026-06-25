@@ -74,7 +74,6 @@ public class DuoJieChatClient implements ChatClient {
         Request requestHttp = new Request.Builder()
                 .url(resolveUrl(provider, target))
                 .post(RequestBody.create(reqBody.toString(), HttpMediaTypes.JSON))
-                .addHeader("Content-Type", HttpMediaTypes.JSON_UTF8_HEADER)
                 .addHeader("Authorization", "Bearer " + provider.getApiKey())
                 .build();
 
@@ -235,7 +234,6 @@ public class DuoJieChatClient implements ChatClient {
         return new Request.Builder()
                 .url(resolveUrl(provider, target))
                 .post(RequestBody.create(reqBody.toString(), HttpMediaTypes.JSON))
-                .addHeader("Content-Type", HttpMediaTypes.JSON_UTF8_HEADER)
                 .addHeader("Accept", "text/event-stream")
                 .addHeader("Authorization", "Bearer " + provider.getApiKey())
                 .build();
