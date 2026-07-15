@@ -35,10 +35,22 @@ public enum SearchChannelType {
     INTENT_DIRECTED,
 
     /**
-     * ES 关键词检索
-     * 基于 Elasticsearch 的关键词分词检索
+     * 关键词检索
+     * 基于全文检索引擎（如 Elasticsearch）的关键词分词检索，后端为实现细节
      */
-    KEYWORD_ES,
+    KEYWORD,
+
+    /**
+     * 知识图谱检索
+     * 基于实体与关系的图谱召回（预留，尚未实现）
+     */
+    GRAPH,
+
+    /**
+     * 联网检索
+     * 基于外部 Web 搜索 API（如 You.com Search）的实时网络召回，与本地知识库通道互补
+     */
+    WEB_SEARCH,
 
     /**
      * 混合检索
